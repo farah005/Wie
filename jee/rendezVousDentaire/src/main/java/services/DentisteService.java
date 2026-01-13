@@ -97,40 +97,6 @@ public class DentisteService implements DentisteLocal {
         }
     }
     
-    // Méthodes utilitaires supplémentaires
-    
-    /**
-     * Recherche un dentiste par email
-     */
-    public Dentiste findByEmail(String email) {
-        try {
-            TypedQuery<Dentiste> query = em.createQuery(
-                "SELECT d FROM Dentiste d WHERE d.emailD = :email", 
-                Dentiste.class
-            );
-            query.setParameter("email", email);
-            return query.getSingleResult();
-        } catch (NoResultException e) {
-            return null;
-        }
-    }
-    
-    /**
-     * Vérifie si un email existe déjà
-     */
-    public boolean emailExists(String email) {
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                "SELECT COUNT(d) FROM Dentiste d WHERE d.emailD = :email", 
-                Long.class
-            );
-            query.setParameter("email", email);
-            return query.getSingleResult() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
     /**
      * Recherche des dentistes par spécialité
      */
@@ -162,11 +128,5 @@ public class DentisteService implements DentisteLocal {
         }
     }
     
-    /**
-     * Recherche des dentistes disponibles (sans critère spécifique)
-     */
-    public List<Dentiste> findAvailableDentistes() {
-        // Cette méthode peut être étendue pour vérifier la disponibilité réelle
-        return findAll();
-    }
+   
 }

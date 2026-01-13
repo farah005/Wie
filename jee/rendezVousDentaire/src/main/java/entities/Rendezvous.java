@@ -177,4 +177,9 @@ public class Rendezvous implements Serializable {
         return "Rendezvous[idRv=" + idRv + ", date=" + dateRv + 
                ", heure=" + heureRv + ", statut=" + statutRv + "]";
     }
+
+	public void setAideSoignant(AideSoignant a) {
+		// TODO Auto-generated method stub
+		
+	}
 }

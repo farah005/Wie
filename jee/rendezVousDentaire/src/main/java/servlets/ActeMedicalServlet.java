@@ -5,11 +5,27 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ejb.EJB;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
+
+import interfaces.ActeMedicalLocal;
+import interfaces.RendezvousLocal;
+import interfaces.ServiceMedicalLocal;
+
+import entities.ActeMedical;
+import entities.Rendezvous;
+import entities.ServiceMedical;
 
 @WebServlet("/actemedical")
 public class ActeMedicalServlet extends HttpServlet {
+    @EJB
+    private ActeMedicalLocal acteMedicalService;
+    @EJB
+    private RendezvousLocal rendezvousService;
+    @EJB
+    private ServiceMedicalLocal serviceMedicalService;
     private static final long serialVersionUID = 1L;
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -63,15 +79,24 @@ public class ActeMedicalServlet extends HttpServlet {
             tarif = new BigDecimal(tarifStr);
         }
         
+        // Récupérer les entités liées
+        Rendezvous rdv = rendezvousService.find(idRv);
+        ServiceMedical sm = serviceMedicalService.find(numSM);
+        if (rdv == null || sm == null) {
+            request.setAttribute("erreur", "Rendez-vous ou service médical introuvable.");
+            request.getRequestDispatcher("/WEB-INF/jsp/ActeMedical.jsp").forward(request, response);
+            return;
+        }
+
         // Créer l'entité ActeMedical
-        // ActeMedical acte = new ActeMedical();
-        // acte.setIdRv(idRv);
-        // acte.setNumSM(numSM);
-        // acte.setDescriptionAM(description);
-        // acte.setTarifAM(tarif);
-        
+        ActeMedical acte = new ActeMedical();
+        acte.setRendezvous(rdv);
+        acte.setServiceMedical(sm);
+        acte.setDescriptionAM(description);
+        acte.setTarifAM(tarif);
+
         // Appel au service EJB
-        // acteMedicalService.create(acte);
+        acteMedicalService.create(acte);
         
         request.setAttribute("message", "Acte médical créé avec succès");
         request.getRequestDispatcher("/WEB-INF/jsp/ActeMedical.jsp").forward(request, response);
@@ -89,15 +114,15 @@ public class ActeMedicalServlet extends HttpServlet {
         String idStr = request.getParameter("id");
         if (idStr != null) {
             Integer id = Integer.parseInt(idStr);
-            // acteMedicalService.delete(id);
+                  acteMedicalService.delete(id);
         }
         response.sendRedirect(request.getContextPath() + "/actemedical?action=list");
     }
     
     private void listActes(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        // List<ActeMedical> actes = acteMedicalService.findAll();
-        // request.setAttribute("actes", actes);
+         List<ActeMedical> actes = acteMedicalService.findAll();
+         request.setAttribute("actes", actes);
         request.getRequestDispatcher("/WEB-INF/jsp/ListeActes.jsp").forward(request, response);
     }
     
@@ -106,8 +131,8 @@ public class ActeMedicalServlet extends HttpServlet {
         String idStr = request.getParameter("id");
         if (idStr != null) {
             Integer id = Integer.parseInt(idStr);
-            // ActeMedical acte = acteMedicalService.find(id);
-            // request.setAttribute("acte", acte);
+            ActeMedical acte = acteMedicalService.find(id);
+            request.setAttribute("acte", acte);
         }
         request.getRequestDispatcher("/WEB-INF/jsp/DetailActe.jsp").forward(request, response);
     }
@@ -117,8 +142,8 @@ public class ActeMedicalServlet extends HttpServlet {
         String idRvStr = request.getParameter("idRv");
         if (idRvStr != null) {
             Integer idRv = Integer.parseInt(idRvStr);
-            // List<ActeMedical> actes = acteMedicalService.findByRendezvous(idRv);
-            // request.setAttribute("actes", actes);
+            List<ActeMedical> actes = acteMedicalService.findByRendezvous(idRv);
+            request.setAttribute("actes", actes);
         }
         request.getRequestDispatcher("/WEB-INF/jsp/ListeActes.jsp").forward(request, response);
     }

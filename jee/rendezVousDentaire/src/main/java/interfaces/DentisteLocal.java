@@ -12,5 +12,6 @@ public interface DentisteLocal {
 	public List<Dentiste> findBySpecialite(String specialite);
 	public void update(Dentiste dentiste);
 	public void delete(Integer id);
+	public long count();
 	
 }

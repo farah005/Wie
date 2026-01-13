@@ -1,189 +1,194 @@
 package servlets;
 
+import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import interfaces.DentisteLocal;
+import interfaces.PatientLocal;
+import interfaces.RendezvousLocal;
+import entities.Rendezvous;
+import entities.Patient;
+import entities.Dentiste;
+
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @WebServlet("/rendezvous")
 public class RendezvousServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    @EJB
+    private RendezvousLocal RendezvousService;
+    @EJB
+    private PatientLocal PatientService;
+    @EJB
+    private DentisteLocal DentisteService;
+
+    private static final String VUE_FORMULAIRE = "/WEB-INF/jsp/Rendezvous.jsp";
+    private static final String VUE_DETAIL = "/WEB-INF/jsp/DetailRendezvous.jsp";
+
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        String action = request.getParameter("action");
-        HttpSession session = request.getSession(false);
         
-        if (session == null || session.getAttribute("email") == null) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("idConnecte") == null) {
             response.sendRedirect(request.getContextPath() + "/connexion");
             return;
         }
-        
-        if ("list".equals(action)) {
-            listRendezvous(request, response);
-        } else if ("view".equals(action)) {
+
+        // Charger toujours la liste des dentistes pour le formulaire <select>
+        try {
+            List<Dentiste> lesDentistes = DentisteService.findAll();
+            request.setAttribute("lesDentistes", lesDentistes);
+        } catch (Exception e) {
+            request.setAttribute("erreur", "Erreur chargement dentistes : " + e.getMessage());
+        }
+
+        String action = request.getParameter("action");
+        if ("view".equals(action)) {
             viewRendezvous(request, response);
-        } else if ("byDate".equals(action)) {
-            searchByDate(request, response);
-        } else if ("byStatut".equals(action)) {
-            searchByStatut(request, response);
+        } else if ("delete".equals(action)) {
+            deleteRendezvous(request, response);
         } else {
-            // Afficher le formulaire de rendez-vous
-            request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
+            listRendezvous(request, response);
         }
     }
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        String action = request.getParameter("action");
         
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("idConnecte") == null) {
+            response.sendRedirect(request.getContextPath() + "/connexion");
+            return;
+        }
+
+        String action = request.getParameter("action");
         if ("create".equals(action)) {
             createRendezvous(request, response);
-        } else if ("update".equals(action)) {
-            updateRendezvous(request, response);
-        } else if ("delete".equals(action)) {
-            deleteRendezvous(request, response);
         } else if ("updateStatut".equals(action)) {
             updateStatut(request, response);
         }
     }
     
-    private void createRendezvous(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        try {
-            String idPatientStr = request.getParameter("idPatient");
-            String idDentisteStr = request.getParameter("idDentiste");
-            String dateRvStr = request.getParameter("dateRv");
-            String heureRv = request.getParameter("heureRv");
-            String statut = request.getParameter("statut");
-            String details = request.getParameter("details");
-            
-            // Validation
-            if (idPatientStr == null || idDentisteStr == null || 
-                dateRvStr == null || heureRv == null) {
-                request.setAttribute("erreur", "Veuillez remplir tous les champs obligatoires");
-                request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
-                return;
-            }
-            
-            Integer idPatient = Integer.parseInt(idPatientStr);
-            Integer idDentiste = Integer.parseInt(idDentisteStr);
-            
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date dateRv = sdf.parse(dateRvStr);
-            
-            // Créer l'entité Rendezvous
-            // Rendezvous rdv = new Rendezvous();
-            // rdv.setIdP(idPatient);
-            // rdv.setIdD(idDentiste);
-            // rdv.setDateRv(dateRv);
-            // rdv.setHeureRv(heureRv);
-            // rdv.setStatutRv(statut != null ? statut : "En attente");
-            // rdv.setDetailsRv(details);
-            
-            // Appel au service EJB
-            // rendezvousService.create(rdv);
-            
-            request.setAttribute("message", "Rendez-vous créé avec succès");
-            request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
-            
-        } catch (ParseException e) {
-            request.setAttribute("erreur", "Format de date invalide");
-            request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
-        }
-    }
-    
-    private void updateRendezvous(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        // Logique de mise à jour
-        response.sendRedirect(request.getContextPath() + "/rendezvous?action=list");
-    }
-    
-    private void deleteRendezvous(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        if (idStr != null) {
-            Integer id = Integer.parseInt(idStr);
-            // rendezvousService.delete(id);
-        }
-        response.sendRedirect(request.getContextPath() + "/rendezvous?action=list");
-    }
-    
+    // --- LOGIQUE METIER ---
+
     private void listRendezvous(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         HttpSession session = request.getSession();
         String userType = (String) session.getAttribute("userType");
-        
+        Integer idConnecte = (Integer) session.getAttribute("idConnecte");
+
+        List<Rendezvous> liste;
         if ("patient".equals(userType)) {
-            // List<Rendezvous> rdvs = rendezvousService.findByPatient(patientId);
-            // request.setAttribute("rendezvous", rdvs);
-        } else if ("dentiste".equals(userType)) {
-            // List<Rendezvous> rdvs = rendezvousService.findByDentiste(dentisteId);
-            // request.setAttribute("rendezvous", rdvs);
+            liste = RendezvousService.findByPatient(idConnecte);
+        } else {
+            liste = RendezvousService.findAll();
         }
-        
-        request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
+
+        request.setAttribute("listeRdvs", liste);
+        request.getRequestDispatcher(VUE_FORMULAIRE).forward(request, response);
     }
-    
-    private void viewRendezvous(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        if (idStr != null) {
-            Integer id = Integer.parseInt(idStr);
-            // Rendezvous rdv = rendezvousService.find(id);
-            // request.setAttribute("rendezvous", rdv);
-        }
-        request.getRequestDispatcher("/WEB-INF/jsp/DetailRendezvous.jsp").forward(request, response);
-    }
-    
-    private void searchByDate(HttpServletRequest request, HttpServletResponse response) 
+
+    private void createRendezvous(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            String dateStr = request.getParameter("date");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = sdf.parse(dateStr);
+            Integer idP = Integer.parseInt(request.getParameter("idPatient"));
+            Integer idD = Integer.parseInt(request.getParameter("idDentiste"));
+            String dateStr = request.getParameter("dateRv");
+            String heureRv = request.getParameter("heureRv");
+            String details = request.getParameter("details");
+
+            Date dateRv = new SimpleDateFormat("yyyy-MM-dd").parse(dateStr);
+
+            // --- 1. SÉCURITÉ : DISPONIBILITÉ DENTISTE ---
+            if (!RendezvousService.isSlotAvailable(idD, dateRv, heureRv)) {
+                request.setAttribute("erreur", "Ce créneau horaire est déjà réservé pour ce dentiste.");
+                listRendezvous(request, response);
+                return;
+            }
+
+            // --- 2. SÉCURITÉ : UN SEUL RDV PAR PATIENT PAR JOUR ---
+            if (RendezvousService.patientADejaRDV(idP, dateRv)) {
+                request.setAttribute("erreur", "Le patient possède déjà un rendez-vous à cette date.");
+                listRendezvous(request, response);
+                return;
+            }
+
+            // Création si les tests passent
+            Patient patient = PatientService.find(idP);
+            Dentiste dentiste = DentisteService.find(idD);
+
+            Rendezvous rdv = new Rendezvous();
+            rdv.setPatient(patient);
+            rdv.setDentiste(dentiste);
+            rdv.setDateRv(dateRv);
+            rdv.setHeureRv(heureRv);
+            rdv.setStatutRv("En attente");
+            rdv.setDetailsRv(details);
+
+            RendezvousService.create(rdv);
+            request.setAttribute("message", "Rendez-vous enregistré avec succès !");
             
-            // List<Rendezvous> rdvs = rendezvousService.findByDate(date);
-            // request.setAttribute("rendezvous", rdvs);
-            
-            request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
-        } catch (ParseException e) {
-            request.setAttribute("erreur", "Format de date invalide");
-            request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("erreur", "Erreur lors de la prise de RDV : " + e.getMessage());
         }
+        listRendezvous(request, response);
     }
-    
-    private void searchByStatut(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        String statut = request.getParameter("statut");
-        
-        if (statut != null && !statut.isEmpty()) {
-            // List<Rendezvous> rdvs = rendezvousService.findByStatut(statut);
-            // request.setAttribute("rendezvous", rdvs);
-        }
-        
-        request.getRequestDispatcher("/WEB-INF/jsp/Rendezvous.jsp").forward(request, response);
-    }
-    
+
     private void updateStatut(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        String newStatut = request.getParameter("newStatut");
-        
-        if (idStr != null && newStatut != null) {
-            Integer id = Integer.parseInt(idStr);
-            // Rendezvous rdv = rendezvousService.find(id);
-            // rdv.setStatutRv(newStatut);
-            // rendezvousService.update(rdv);
+        try {
+            Integer id = Integer.parseInt(request.getParameter("id"));
+            String nouveauStatut = request.getParameter("statut");
+            
+            // Utilisation de la méthode optimisée de l'EJB
+            RendezvousService.updateStatut(id, nouveauStatut);
+            request.setAttribute("message", "Le rendez-vous est désormais : " + nouveauStatut);
+        } catch (Exception e) {
+            request.setAttribute("erreur", "Impossible de mettre à jour le statut.");
         }
-        
-        response.sendRedirect(request.getContextPath() + "/rendezvous?action=list");
+        listRendezvous(request, response);
+    }
+
+    private void deleteRendezvous(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        if (!"aide-soignant".equals(session.getAttribute("userType"))) {
+            request.setAttribute("erreur", "Accès refusé : Seul l'aide-soignant peut supprimer un RDV.");
+        } else {
+            try {
+                Integer id = Integer.parseInt(request.getParameter("id"));
+                RendezvousService.delete(id);
+                request.setAttribute("message", "Le rendez-vous a été supprimé.");
+            } catch (Exception e) {
+                request.setAttribute("erreur", "Erreur lors de la suppression.");
+            }
+        }
+        listRendezvous(request, response);
+    }
+
+    private void viewRendezvous(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        try {
+            Integer id = Integer.parseInt(request.getParameter("id"));
+            Rendezvous rdv = RendezvousService.find(id);
+            if (rdv != null) {
+                request.setAttribute("rdv", rdv);
+                request.getRequestDispatcher(VUE_DETAIL).forward(request, response);
+            } else {
+                throw new Exception();
+            }
+        } catch (Exception e) {
+            response.sendRedirect("rendezvous?action=list");
+        }
     }
 }

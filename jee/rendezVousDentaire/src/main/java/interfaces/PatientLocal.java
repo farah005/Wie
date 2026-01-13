@@ -1,14 +1,16 @@
 package interfaces;
-import java.util.List;
 
+import java.util.List;
 import entities.Patient;
 import jakarta.ejb.Local;
+
 @Local
 public interface PatientLocal {
-	public void create(Patient patient);
-	public Patient find(Integer id);
-	public Patient authenticate(String email, String password);
-	public List<Patient> findAll();
-	public void update(Patient patient);
-	public void delete(Integer id);
+    void create(Patient patient);
+    Patient find(Integer id);
+    Patient authenticate(String email, String password);
+    Patient findByEmail(String email); 
+    List<Patient> findAll();
+    void update(Patient patient);
+    void delete(Integer id);
 }

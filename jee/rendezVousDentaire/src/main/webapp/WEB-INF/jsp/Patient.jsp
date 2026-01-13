@@ -1,63 +1,77 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Inscription Patient</title>
-    <link rel="stylesheet" type="text/css" href="<%= request.getContextPath() %>/css/mesStyles.css">
+    <title>Inscription — Cabinet Sourire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/mesStyles.css">
+    <style>
+        /* Styles spécifiques au formulaire d'inscription */
+        .form-container { max-width: 650px; margin: 40px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; }
+        label { font-weight: 600; color: #4A3F35; margin-bottom: 5px; font-size: 0.9rem; }
+        input, select { padding: 10px; border: 1px solid #E5E1DA; border-radius: 8px; font-family: inherit; }
+        .required { color: #C0392B; }
+        .form-footer { text-align: center; margin-top: 20px; font-size: 0.9rem; color: #6B5B4B; }
+    </style>
 </head>
 <body>
+    <%-- Inclusion du Header (Barre de navigation) --%>
+    <%@ include file="header.jsp" %>
+
     <div class="form-container">
-        <h2>Inscription Patient</h2>
-        <p>Créez votre dossier médical pour prendre rendez-vous facilement</p>
+        <h2 style="color: #4A3F35; text-align: center; margin-top: 0;">Créer mon dossier patient</h2>
+        <p style="text-align: center; color: #888; margin-bottom: 25px;">Rejoignez notre cabinet pour gérer vos soins en ligne.</p>
         
-        <% if (request.getAttribute("erreur") != null) { %>
-            <div class="error-message">
-                <%= request.getAttribute("erreur") %>
+        <%-- Zone des Messages d'erreur --%>
+        <c:if test="${not empty erreur}">
+            <div class="error-message" style="background: #FDECEC; color: #C0392B; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #FACCCC; font-size: 0.85rem;">
+                <strong>⚠️ Erreur :</strong> ${erreur}
             </div>
-        <% } %>
+        </c:if>
         
-        <form action="<%= request.getContextPath() %>/patient" method="post" enctype="multipart/form-data">
+        <form action="${pageContext.request.contextPath}/patient" method="post" enctype="multipart/form-data" id="registerForm">
             <input type="hidden" name="action" value="create">
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="nom">Nom * :</label>
-                    <input type="text" id="nom" name="nom" required maxlength="100">
+                    <label>Nom <span class="required">*</span></label>
+                    <input type="text" name="nom" required placeholder="Dupont">
                 </div>
-                
                 <div class="form-group">
-                    <label for="prenom">Prénom * :</label>
-                    <input type="text" id="prenom" name="prenom" required maxlength="100">
+                    <label>Prénom <span class="required">*</span></label>
+                    <input type="text" name="prenom" required placeholder="Jean">
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email * :</label>
-                    <input type="email" id="email" name="email" required maxlength="100">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" name="email" required placeholder="jean.dupont@email.com">
                 </div>
-                
                 <div class="form-group">
-                    <label for="dateNaissance">Date de naissance :</label>
+                    <label>Date de naissance</label>
                     <input type="date" id="dateNaissance" name="dateNaissance">
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="sexe">Sexe :</label>
-                    <select id="sexe" name="sexe">
+                    <label>Sexe</label>
+                    <select name="sexe">
                         <option value="">Sélectionner</option>
                         <option value="M">Masculin</option>
                         <option value="F">Féminin</option>
                     </select>
                 </div>
-                
                 <div class="form-group">
-                    <label for="groupeSanguin">Groupe sanguin :</label>
-                    <select id="groupeSanguin" name="groupeSanguin">
-                        <option value="">Sélectionner</option>
+                    <label>Groupe sanguin</label>
+                    <select name="groupeSanguin">
+                        <option value="">Inconnu</option>
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="O">O</option>
@@ -66,49 +80,49 @@
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="recouvrement">Recouvrement social :</label>
-                <input type="text" id="recouvrement" name="recouvrement" maxlength="100">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Recouvrement social (N° Assurance)</label>
+                <input type="text" name="recouvrement" placeholder="Ex: CNAM, Mutuelle...">
             </div>
             
-            <div class="form-group">
-                <label for="photo">Photo de profil :</label>
-                <input type="file" id="photo" name="photo" accept="image/*">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Photo de profil</label>
+                <input type="file" name="photo" accept="image/*">
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="mdp">Mot de passe * :</label>
-                    <input type="password" id="mdp" name="mdp" required maxlength="10">
+                    <label>Mot de passe <span class="required">*</span></label>
+                    <input type="password" id="mdp" name="mdp" required minlength="4">
                 </div>
-                
                 <div class="form-group">
-                    <label for="confirmMdp">Confirmer mot de passe * :</label>
-                    <input type="password" id="confirmMdp" name="confirmMdp" required maxlength="10">
+                    <label>Confirmation <span class="required">*</span></label>
+                    <input type="password" id="confirmMdp" required minlength="4">
                 </div>
             </div>
             
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">Enregistrer</button>
-                <button type="reset" class="btn-secondary">Réinitialiser</button>
-            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 20px;">Finaliser l'inscription</button>
         </form>
         
         <p class="form-footer">
-            Déjà inscrit ? <a href="<%= request.getContextPath() %>/connexion">Se connecter</a>
+            Déjà inscrit ? <a href="${pageContext.request.contextPath}/connexion" style="color: #4A3F35; font-weight: 700; text-decoration: none;">Connectez-vous ici</a>
         </p>
     </div>
-    
+
     <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
-            var mdp = document.getElementById('mdp').value;
-            var confirmMdp = document.getElementById('confirmMdp').value;
+        // Validation de la correspondance des mots de passe
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const mdp = document.getElementById('mdp').value;
+            const confirm = document.getElementById('confirmMdp').value;
             
-            if (mdp !== confirmMdp) {
+            if (mdp !== confirm) {
                 e.preventDefault();
-                alert('Les mots de passe ne correspondent pas');
+                alert('Les mots de passe ne correspondent pas.');
             }
         });
+
+        // Désactiver les dates futures
+        document.getElementById('dateNaissance').max = new Date().toISOString().split('T')[0];
     </script>
 </body>
 </html>

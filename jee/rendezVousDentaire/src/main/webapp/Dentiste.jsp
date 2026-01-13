@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Liste des Dentistes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="<%= request.getContextPath() %>/css/mesStyles.css">
 </head>
 <body>

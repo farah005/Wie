@@ -9,6 +9,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet("/publication")
 @MultipartConfig(
@@ -19,6 +26,7 @@ import java.io.IOException;
 public class PublicationServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final String UPLOAD_DIRECTORY = "uploads";
+    private static final Logger LOGGER = Logger.getLogger(PublicationServlet.class.getName());
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -28,7 +36,7 @@ public class PublicationServlet extends HttpServlet {
             // Récupérer toutes les publications
             // List<Publication> publications = publicationService.findAll();
             // request.setAttribute("publications", publications);
-            request.getRequestDispatcher("/WEB-INF/jsp/Publications.jsp").forward(request, response);
+            //request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
         } else {
             // Afficher le formulaire de publication
             request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
@@ -60,18 +68,20 @@ public class PublicationServlet extends HttpServlet {
                 return;
             }
             
-            String fileName = getFileName(filePart);
-            
+            String fileName = sanitizeFileName(getFileName(filePart));
+
             // Créer le répertoire d'upload s'il n'existe pas
             String uploadPath = getServletContext().getRealPath("") + File.separator + UPLOAD_DIRECTORY;
-            File uploadDir = new File(uploadPath);
-            if (!uploadDir.exists()) {
-                uploadDir.mkdir();
+            Path uploadDir = Paths.get(uploadPath);
+            if (Files.notExists(uploadDir)) {
+                Files.createDirectories(uploadDir);
             }
-            
-            // Sauvegarder le fichier
-            String filePath = uploadPath + File.separator + fileName;
-            filePart.write(filePath);
+
+            // Sauvegarder le fichier de façon fiable
+            Path filePath = uploadDir.resolve(fileName);
+            try (InputStream input = filePart.getInputStream()) {
+                Files.copy(input, filePath, StandardCopyOption.REPLACE_EXISTING);
+            }
             
             // Créer l'entité Publication
             // Publication publication = new Publication();
@@ -87,6 +97,7 @@ public class PublicationServlet extends HttpServlet {
             request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
             
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erreur lors de l'upload", e);
             request.setAttribute("erreur", "Erreur lors de l'upload : " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
         }
@@ -113,12 +124,24 @@ public class PublicationServlet extends HttpServlet {
     
     private String getFileName(Part part) {
         String contentDisposition = part.getHeader("content-disposition");
-        String[] tokens = contentDisposition.split(";");
-        for (String token : tokens) {
-            if (token.trim().startsWith("filename")) {
-                return token.substring(token.indexOf('=') + 2, token.length() - 1);
+        if (contentDisposition == null) {
+            return "";
+        }
+        for (String token : contentDisposition.split(";")) {
+            token = token.trim();
+            if (token.startsWith("filename=")) {
+                String name = token.substring(token.indexOf('=') + 1).trim();
+                if (name.startsWith("\"") && name.endsWith("\"")) {
+                    name = name.substring(1, name.length() - 1);
+                }
+                return Paths.get(name).getFileName().toString();
             }
         }
         return "";
+    }
+
+    private String sanitizeFileName(String filename) {
+        if (filename == null || filename.isBlank()) return "unnamed";
+        return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }

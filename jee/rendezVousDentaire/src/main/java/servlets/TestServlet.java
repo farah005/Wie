@@ -1,4 +1,4 @@
-package servlets;
+/*package servlets;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,4 +27,4 @@ public class TestServlet extends HttpServlet {
         out.println("</body>");
         out.println("</html>");
     }
-}
+}*/

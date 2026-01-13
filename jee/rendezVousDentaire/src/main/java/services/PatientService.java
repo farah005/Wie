@@ -11,28 +11,34 @@ import jakarta.persistence.TypedQuery;
 
 @Stateless
 public class PatientService implements PatientLocal {
-    
+
     @PersistenceContext(unitName = "RendezVousPU")
     private EntityManager em;
 
+    /**
+     * Enregistre un nouveau patient
+     */
     @Override
     public void create(Patient patient) {
         try {
             em.persist(patient);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la création du patient: " + e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la création du patient : " + e.getMessage());
         }
     }
 
+    /**
+     * Trouve un patient par son ID (Clé primaire)
+     */
     @Override
     public Patient find(Integer id) {
-        try {
-            return em.find(Patient.class, id);
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la recherche du patient: " + e.getMessage(), e);
-        }
+        if (id == null) return null;
+        return em.find(Patient.class, id);
     }
 
+    /**
+     * Authentification : recherche par email et mot de passe
+     */
     @Override
     public Patient authenticate(String email, String password) {
         try {
@@ -42,108 +48,83 @@ public class PatientService implements PatientLocal {
             );
             query.setParameter("email", email);
             query.setParameter("password", password);
-            
             return query.getSingleResult();
         } catch (NoResultException e) {
-            // Aucun patient trouvé avec ces identifiants
-            return null;
+            return null; // Identifiants incorrects
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de l'authentification: " + e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'authentification : " + e.getMessage());
         }
     }
 
+    /**
+     * Recherche un patient par son adresse email uniquement
+     */
+    @Override
+    public Patient findByEmail(String email) {
+        try {
+            // Utilisation de la NamedQuery définie dans l'entité Patient
+            return em.createNamedQuery("Patient.findByEmail", Patient.class)
+                     .setParameter("email", email)
+                     .getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur recherche email : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Récupère la liste de tous les patients enregistrés
+     */
     @Override
     public List<Patient> findAll() {
         try {
-            TypedQuery<Patient> query = em.createQuery(
-                "SELECT p FROM Patient p ORDER BY p.nomP, p.prenomP", 
-                Patient.class
-            );
-            return query.getResultList();
+            return em.createNamedQuery("Patient.findAll", Patient.class).getResultList();
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des patients: " + e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la récupération de la liste : " + e.getMessage());
         }
     }
 
+    /**
+     * Met à jour les informations d'un patient
+     */
     @Override
     public void update(Patient patient) {
         try {
-            if (patient.getIdP() == null) {
-                throw new IllegalArgumentException("L'ID du patient ne peut pas être null");
+            if (patient.getIdP() != null && em.find(Patient.class, patient.getIdP()) != null) {
+                em.merge(patient);
+            } else {
+                throw new IllegalArgumentException("Patient inexistant pour mise à jour.");
             }
-            
-            Patient existingPatient = em.find(Patient.class, patient.getIdP());
-            if (existingPatient == null) {
-                throw new IllegalArgumentException("Patient non trouvé avec l'ID: " + patient.getIdP());
-            }
-            
-            em.merge(patient);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la mise à jour du patient: " + e.getMessage(), e);
+            throw new RuntimeException("Erreur mise à jour : " + e.getMessage());
         }
     }
 
+    /**
+     * Supprime un patient de la base de données
+     */
     @Override
     public void delete(Integer id) {
         try {
-            Patient patient = em.find(Patient.class, id);
+            Patient patient = find(id);
             if (patient != null) {
                 em.remove(patient);
-            } else {
-                throw new IllegalArgumentException("Patient non trouvé avec l'ID: " + id);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la suppression du patient: " + e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la suppression : " + e.getMessage());
         }
     }
-    
-    // Méthodes utilitaires supplémentaires
-    
+
     /**
-     * Recherche un patient par email
-     */
-    public Patient findByEmail(String email) {
-        try {
-            TypedQuery<Patient> query = em.createQuery(
-                "SELECT p FROM Patient p WHERE p.emailP = :email", 
-                Patient.class
-            );
-            query.setParameter("email", email);
-            return query.getSingleResult();
-        } catch (NoResultException e) {
-            return null;
-        }
-    }
-    
-    /**
-     * Vérifie si un email existe déjà
-     */
-    public boolean emailExists(String email) {
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                "SELECT COUNT(p) FROM Patient p WHERE p.emailP = :email", 
-                Long.class
-            );
-            query.setParameter("email", email);
-            return query.getSingleResult() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Recherche des patients par groupe sanguin
+     * Méthode utilitaire : recherche par groupe sanguin
      */
     public List<Patient> findByGroupeSanguin(String groupeSanguin) {
-        try {
-            TypedQuery<Patient> query = em.createQuery(
-                "SELECT p FROM Patient p WHERE p.groupeSanguinP = :groupe", 
-                Patient.class
-            );
-            query.setParameter("groupe", groupeSanguin);
-            return query.getResultList();
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la recherche par groupe sanguin: " + e.getMessage(), e);
-        }
+        TypedQuery<Patient> query = em.createQuery(
+            "SELECT p FROM Patient p WHERE p.groupeSanguinP = :groupe", 
+            Patient.class
+        );
+        query.setParameter("groupe", groupeSanguin);
+        return query.getResultList();
     }
 }

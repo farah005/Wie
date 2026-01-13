@@ -1,71 +1,69 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>connexion</title>
-    <link rel="stylesheet" type="text/css" href="<%= request.getContextPath() %>/css/mesStyles.css">
+    <title>Connexion — Cabinet Sourire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/mesStyles.css">
+    <style>
+        .login-container { max-width: 400px; margin: 80px auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+        label { font-weight: 600; color: #4A3F35; margin-bottom: 8px; }
+        input, select { padding: 12px; border: 1px solid #E5E1DA; border-radius: 8px; font-size: 1rem; }
+        .btn-login { background: #4A3F35; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; width: 100%; margin-top: 10px; transition: 0.3s; }
+        .btn-login:hover { background: #352d26; }
+        .info-msg { background: #E5F9F0; color: #2D8A5C; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #CCF2E0; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
-    <div class="connexion-container">
-        <h2>Bienvenue sur notre plateforme</h2>
-        <p>Veuillez sélectionner votre type de compte pour vous connecter</p>
+    <%-- Inclusion du Header commun --%>
+    <%@ include file="header.jsp" %>
+
+    <div class="login-container">
+        <h2 style="text-align: center; color: #4A3F35; margin-top: 0;">Espace Patient</h2>
         
-        <% if (request.getAttribute("erreur") != null) { %>
-            <div class="error-message">
-                <%= request.getAttribute("erreur") %>
+        <%-- Message de déconnexion réussie --%>
+        <c:if test="${param.logout == 'true'}">
+            <div class="info-msg">
+                ✅ Vous avez été déconnecté.
             </div>
-        <% } %>
-        
-        <div class="user-type-selection">
-            <div class="user-card">
-                <h3>Je suis un Patient</h3>
-                <p>Prendre rendez-vous avec un dentiste</p>
-                <a href="<%= request.getContextPath() %>/patient" class="btn-primary">S'inscrire</a>
-                <a href="#" onclick="showLoginForm('patient')" class="btn-secondary">Se connecter</a>
+        </c:if>
+
+        <%-- Message d'erreur de connexion --%>
+        <c:if test="${not empty erreur}">
+            <div class="error-message" style="background: #FDECEC; color: #C0392B; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #FACCCC; text-align: center;">
+                ${erreur}
             </div>
-            
-            <div class="user-card">
-                <h3>Je suis un Aide-soignant</h3>
-                <p>Gérer les rendez-vous et consultations</p>
-                <a href="<%= request.getContextPath() %>/dentiste" class="btn-primary">S'inscrire</a>
-                <a href="#" onclick="showLoginForm('dentiste')" class="btn-secondary">Se connecter</a>
+        </c:if>
+
+        <form action="${pageContext.request.contextPath}/connexion" method="post">
+            <div class="form-group">
+                <label for="userType">Vous êtes :</label>
+                <select name="userType" id="userType">
+                    <option value="patient">Patient</option>
+                    <option value="aide-soignant">Personnel Médical</option>
+                </select>
             </div>
-        </div>
-        
-        <!-- Formulaire de connexion (caché par défaut) -->
-        <div id="loginForm" class="login-form" style="display:none;">
-            <h3>Connexion</h3>
-            <form action="<%= request.getContextPath() %>/connexion" method="post">
-                <input type="hidden" name="userType" id="userType" value="">
-                
-                <div class="form-group">
-                    <label for="email">Email :</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Mot de passe :</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <button type="submit" class="btn-primary">Se connecter</button>
-                <button type="button" onclick="hideLoginForm()" class="btn-secondary">Annuler</button>
-            </form>
+
+            <div class="form-group">
+                <label for="email">Adresse Email</label>
+                <input type="email" id="email" name="email" required placeholder="exemple@mail.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn-login">Se connecter</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 25px; font-size: 0.9rem; color: #6B5B4B;">
+            Nouveau patient ? <a href="${pageContext.request.contextPath}/patient" style="color: #4A3F35; font-weight: 700; text-decoration: none;">Créer un compte</a>
         </div>
     </div>
-    
-    <script>
-        function showLoginForm(type) {
-            document.getElementById('userType').value = type;
-            document.getElementById('loginForm').style.display = 'block';
-            document.querySelector('.user-type-selection').style.display = 'none';
-        }
-        
-        function hideLoginForm() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.querySelector('.user-type-selection').style.display = 'flex';
-        }
-    </script>
 </body>
 </html>

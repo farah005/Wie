@@ -1,104 +1,17 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Liste des Dentistes</title>
-    <link rel="stylesheet" type="text/css" href="<%= request.getContextPath() %>/css/mesStyles.css">
-</head>
-<body>
-    <div class="form-container">
-        <h2>👨‍⚕️ Nos Dentistes</h2>
-        <p>Choisissez le professionnel qui correspond à vos besoins</p>
-        
-        <div class="actions-bar">
-            <a href="<%= request.getContextPath() %>/rendezvous" class="btn-primary">
-                📅 Prendre rendez-vous
-            </a>
-            <a href="<%= request.getContextPath() %>/index.jsp" class="btn-secondary">
-                🏠 Retour
-            </a>
-        </div>
-        
-        <!-- Filtres de recherche -->
-        <div class="search-section">
-            <h3>Rechercher un dentiste</h3>
-            <div class="search-form">
-                <input type="text" id="searchInput" placeholder="Rechercher par nom ou spécialité..." 
-                       onkeyup="filterDentists()">
-                <select id="specialiteFilter" onchange="filterDentists()">
-                    <option value="">Toutes les spécialités</option>
-                    <option value="Orthodontie">Orthodontie</option>
-                    <option value="Chirurgie dentaire">Chirurgie dentaire</option>
-                    <option value="Dentisterie générale">Dentisterie générale</option>
-                    <option value="Parodontologie">Parodontologie</option>
-                    <option value="Endodontie">Endodontie</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- Liste des dentistes -->
-        <c:choose>
-            <c:when test="${empty dentistes}">
-                <div class="empty-state">
-                    <p>Aucun dentiste disponible pour le moment.</p>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="dentists-grid" id="dentistsGrid">
-                    <c:forEach var="dentiste" items="${dentistes}">
-                        <div class="dentist-card" data-specialite="${dentiste.specialiteD}">
-                            <div class="dentist-photo">
-                                <c:choose>
-                                    <c:when test="${not empty dentiste.photoD}">
-                                        <img src="<%= request.getContextPath() %>/uploads/${dentiste.photoD}" 
-                                             alt="${dentiste.nomD}">
-                                    </c:when>
-                                    <c:otherwise>
-                                        <div class="photo-placeholder">
-                                            ${dentiste.sexeD == 'M' ? '👨‍⚕️' : '👩‍⚕️'}
-                                        </div>
-                                    </c:otherwise>
-                                </c:choose>
-                            </div>
-                            
-                            <div class="dentist-info">
-                                <h3>Dr. ${dentiste.nomD} ${dentiste.prenomD}</h3>
-                                <p class="specialite">
-                                    <strong>🎓 Spécialité:</strong> ${dentiste.specialiteD}
-                                </p>
-                                <p class="contact">
-                                    <strong>📧 Email:</strong> ${dentiste.emailD}
-                                </p>
-                                <c:if test="${not empty dentiste.telD}">
-                                    <p class="contact">
-                                        <strong>📞 Téléphone:</strong> ${dentiste.telD}
-                                    </p>
-                                </c:if>
-                            </div>
-                            
-                            <div class="dentist-actions">
-                                <a href="<%= request.getContextPath() %>/dentiste?action=view&id=${dentiste.idD}" 
-                                   class="btn-secondary">
-                                    👁️ Voir profil
-                                </a>
-                                <a href="<%= request.getContextPath() %>/rendezvous?idDentiste=${dentiste.idD}" 
-                                   class="btn-primary">
-                                    📅 Prendre RDV
-                                </a>
-                            </div>
-                        </div>
-                    </c:forEach>
-                </div>
-            </c:otherwise>
-        </c:choose>
-    </div>
-    
+    <title>Nos Praticiens — Cabinet Sourire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/mesStyles.css">
     <style>
         .dentists-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
             margin-top: 30px;
         }
@@ -106,97 +19,125 @@
         .dentist-card {
             background: white;
             border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
+            padding: 30px;
+            text-align: center;
+            transition: 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid rgba(74, 63, 53, 0.05);
         }
         
         .dentist-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            border-color: #667eea;
+            transform: translateY(-8px);
+            border-color: var(--accent-rose);
         }
         
-        .dentist-photo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .dentist-photo img {
-            width: 120px;
-            height: 120px;
+        .photo-circle {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            background: var(--bg-nude);
             border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid #667eea;
-        }
-        
-        .photo-placeholder {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60px;
+            font-size: 40px;
+            border: 2px solid var(--accent-rose);
         }
-        
-        .dentist-info h3 {
-            color: #1e3c72;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-            text-align: center;
-        }
-        
-        .dentist-info p {
-            margin: 10px 0;
-            color: #666;
-            font-size: 0.95em;
-        }
-        
-        .specialite {
-            background: #f0f4ff;
-            padding: 8px 12px;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-        
-        .dentist-actions {
+
+        .search-bar {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 40px;
             display: flex;
             gap: 10px;
-            margin-top: 20px;
         }
-        
-        .dentist-actions a {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            font-size: 0.9em;
+
+        .badge-spec {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #F0F4FF;
+            color: #4A69BD;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 10px;
         }
     </style>
-    
-    <script>
-        function filterDentists() {
-            const searchInput = document.getElementById('searchInput').value.toLowerCase();
-            const specialiteFilter = document.getElementById('specialiteFilter').value;
-            const cards = document.querySelectorAll('.dentist-card');
-            
-            cards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                const specialite = card.getAttribute('data-specialite');
-                
-                const matchesSearch = text.includes(searchInput);
-                const matchesSpecialite = !specialiteFilter || specialite === specialiteFilter;
-                
-                if (matchesSearch && matchesSpecialite) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-    </script>
+</head>
+<body>
+    <%-- Inclusion du Header (Barre de navigation) --%>
+    <%@ include file="header.jsp" %>
+
+    <div class="form-container" style="max-width: 1100px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 2.5rem;">Nos Praticiens</h2>
+            <p style="color: #888;">Rencontrez notre équipe d'experts pour vos soins dentaires.</p>
+        </div>
+
+        <%-- Barre de recherche et filtres --%>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Rechercher par nom ou spécialité..." onkeyup="filterDentists()">
+            <c:if test="${sessionScope.userType == 'aide-soignant'}">
+                <a href="dentiste?action=addForm" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 0.8rem;">+ Ajouter</a>
+            </c:if>
+        </div>
+
+        <%-- Grille des dentistes --%>
+        <div class="dentists-grid" id="dentistsGrid">
+            <c:forEach var="d" items="${dentistes}">
+                <div class="dentist-card" data-name="${d.nomD.toLowerCase()} ${d.prenomD.toLowerCase()}" data-spec="${d.specialiteD.toLowerCase()}">
+                    <div class="photo-circle">
+                        <c:choose>
+                            <c:when test="${not empty d.photoD}">
+                                <img src="${pageContext.request.contextPath}/uploads/${d.photoD}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                            </c:when>
+                            <c:otherwise>
+                                ${d.sexeD == 'M' ? '👨‍⚕️' : '👩‍⚕️'}
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+
+                    <span class="badge-spec">${d.specialiteD}</span>
+                    <h3 style="margin-bottom: 5px;">Dr. ${d.nomD} ${d.prenomD}</h3>
+                    <p style="font-size: 0.85rem; color: #6B5B4B; margin-bottom: 20px;">
+                        <i class="email-icon">📧</i> ${d.emailD}
+                    </p>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <a href="dentiste?action=view&id=${d.idD}" class="btn-secondary" style="padding: 8px 15px; font-size: 0.7rem; border: 1px solid #DDD; border-radius: 50px; text-decoration: none; color: #4A3F35;">Voir Profil</a>
+                        <a href="rendezvous?idDentiste=${d.idD}" class="btn-primary" style="padding: 8px 15px; font-size: 0.7rem; width: auto;">Prendre RDV</a>
+                    </div>
+                    
+                    <%-- Actions réservées à l'aide-soignant --%>
+                    <c:if test="${sessionScope.userType == 'aide-soignant'}">
+                        <div style="margin-top: 15px; border-top: 1px solid #EEE; padding-top: 10px;">
+                            <a href="dentiste?action=delete&id=${d.idD}" style="color: #C0392B; text-decoration: none; margin-right: 12px;" 
+                               onclick="return confirm('Confirmer la suppression du dentiste ?');">Supprimer</a>
+                            <a href="dentiste?action=editForm&id=${d.idD}" style="color: #4A3F35; text-decoration: none;">Modifier</a>
+                        </div>
+                    </c:if>
+                </div>
+            </c:forEach>
+        </div>
+
+        <script>
+            function filterDentists() {
+                var input = document.getElementById('searchInput').value.toLowerCase();
+                var grid = document.getElementById('dentistsGrid');
+                var cards = grid.querySelectorAll('.dentist-card');
+                cards.forEach(function(card){
+                    var name = card.getAttribute('data-name') || '';
+                    var spec = card.getAttribute('data-spec') || '';
+                    if (name.indexOf(input) > -1 || spec.indexOf(input) > -1) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+        </script>
+
+    </div>
+
 </body>
 </html>

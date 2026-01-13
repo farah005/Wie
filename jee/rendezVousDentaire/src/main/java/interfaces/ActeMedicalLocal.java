@@ -10,6 +10,9 @@ public interface ActeMedicalLocal {
 	 public List<ActeMedical> findAll();
 	 public void update(ActeMedical acte);
 	 public void delete(Integer id);
+
+	 // Recherche des actes par rendez-vous
+	 public List<ActeMedical> findByRendezvous(Integer idRv);
 	
 }
 
