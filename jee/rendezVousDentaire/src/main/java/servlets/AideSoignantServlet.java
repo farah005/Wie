@@ -36,7 +36,7 @@ public class AideSoignantServlet extends HttpServlet {
             List<AideSoignant> aides = aideSoignantService.findAll();
             request.setAttribute("aides", aides);
             // On affiche la page de liste
-            request.getRequestDispatcher("/WEB-INF/jsp/ListeAideSoignant.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/jsp/AideSoignant.jsp").forward(request, response);
         } else {
             // Affichage du formulaire pour création ou édition
             String idStr = request.getParameter("id");
@@ -110,6 +110,8 @@ public class AideSoignantServlet extends HttpServlet {
 
             if (isCreate) {
                 aideSoignantService.create(as);
+                // Placer un message de succès dans la session pour affichage après redirection
+                request.getSession().setAttribute("message", "Inscription de l'aide-soignant réussie.");
             } else {
                 aideSoignantService.update(as);
             }

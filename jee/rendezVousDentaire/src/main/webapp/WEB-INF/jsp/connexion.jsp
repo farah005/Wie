@@ -45,6 +45,7 @@
                 <select name="userType" id="userType">
                     <option value="patient">Patient</option>
                     <option value="aide-soignant">Personnel Médical</option>
+                    <option value="dentiste">Dentiste</option>
                 </select>
             </div>
 

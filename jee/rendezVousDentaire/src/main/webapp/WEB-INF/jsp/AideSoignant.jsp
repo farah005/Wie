@@ -17,6 +17,12 @@
         <c:if test="${not empty erreur}">
             <div class="error-message">${erreur}</div>
         </c:if>
+
+        <!-- Afficher message provenant de la session après redirection -->
+        <c:if test="${not empty sessionScope.message}">
+            <div class="success-message">${sessionScope.message}</div>
+            <c:remove var="message" scope="session" />
+        </c:if>
         <c:if test="${not empty message}">
             <div class="success-message">${message}</div>
         </c:if>

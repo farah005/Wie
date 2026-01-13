@@ -11,6 +11,7 @@ public interface ServiceMedicalLocal {
     ServiceMedical findByNom(String nom);
     List<ServiceMedical> findAll();
     List<ServiceMedical> findByType(String type);
+    List<ServiceMedical> search(String nom, String type);
     List<ServiceMedical> findTopExpensive(int limit);
     List<String> findAllTypes();
     void update(ServiceMedical service);

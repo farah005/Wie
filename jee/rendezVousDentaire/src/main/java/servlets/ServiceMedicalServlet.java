@@ -30,6 +30,9 @@ public class ServiceMedicalServlet extends HttpServlet {
             if ("list".equals(action)) {
                 List<ServiceMedical> services = serviceMedicalService.findAll();
                 request.setAttribute("services", services);
+                // fournir la liste des types pour les filtres
+                List<String> types = serviceMedicalService.findAllTypes();
+                request.setAttribute("types", types);
                 request.getRequestDispatcher("/WEB-INF/jsp/ListeServices.jsp").forward(request, response);
                 
             } else if ("edit".equals(action)) {
@@ -39,10 +42,15 @@ public class ServiceMedicalServlet extends HttpServlet {
                     ServiceMedical sm = serviceMedicalService.find(Integer.parseInt(idStr));
                     request.setAttribute("serviceToEdit", sm);
                 }
+                // types pour l'autocomplétion/selection
+                List<String> types = serviceMedicalService.findAllTypes();
+                request.setAttribute("types", types);
                 request.getRequestDispatcher("/WEB-INF/jsp/Service.jsp").forward(request, response);
                 
             } else {
                 // Par défaut : afficher le formulaire vide
+                List<String> types = serviceMedicalService.findAllTypes();
+                request.setAttribute("types", types);
                 request.getRequestDispatcher("/WEB-INF/jsp/Service.jsp").forward(request, response);
             }
         } catch (Exception e) {
@@ -56,6 +64,16 @@ public class ServiceMedicalServlet extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getParameter("action");
         
+        // Restrict create/update/delete to authorized roles
+        if ("create".equals(action) || "update".equals(action) || "delete".equals(action)) {
+            String userType = (String) request.getSession().getAttribute("userType");
+            if (!"aide-soignant".equalsIgnoreCase(userType) && !"dentiste".equalsIgnoreCase(userType)) {
+                request.setAttribute("erreur", "Accès refusé : action réservée au personnel.");
+                request.getRequestDispatcher("/WEB-INF/jsp/Service.jsp").forward(request, response);
+                return;
+            }
+        }
+
         if ("create".equals(action)) {
             processCreate(request, response);
         } else if ("update".equals(action)) {
@@ -110,10 +128,12 @@ public class ServiceMedicalServlet extends HttpServlet {
     private void processSearch(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         String type = request.getParameter("typeRecherche");
-        if (type != null && !type.isBlank()) {
-            List<ServiceMedical> services = serviceMedicalService.findByType(type);
-            request.setAttribute("services", services);
-        }
+        String nom = request.getParameter("nomRecherche");
+        List<ServiceMedical> services = serviceMedicalService.search(nom, type);
+        request.setAttribute("services", services);
+        // renvoyer aussi la liste des types pour le formulaire
+        List<String> types = serviceMedicalService.findAllTypes();
+        request.setAttribute("types", types);
         request.getRequestDispatcher("/WEB-INF/jsp/Service.jsp").forward(request, response);
     }
 

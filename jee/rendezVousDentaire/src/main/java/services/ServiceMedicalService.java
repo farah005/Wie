@@ -54,6 +54,27 @@ public class ServiceMedicalService implements ServiceMedicalLocal {
     }
 
     @Override
+    public List<ServiceMedical> search(String nom, String type) {
+        StringBuilder jpql = new StringBuilder("SELECT s FROM ServiceMedical s WHERE 1=1");
+        if (nom != null && !nom.isBlank()) {
+            jpql.append(" AND LOWER(s.nomSM) LIKE :nom");
+        }
+        if (type != null && !type.isBlank()) {
+            jpql.append(" AND LOWER(s.typeSM) LIKE :type");
+        }
+        jpql.append(" ORDER BY s.nomSM");
+
+        TypedQuery<ServiceMedical> query = em.createQuery(jpql.toString(), ServiceMedical.class);
+        if (nom != null && !nom.isBlank()) {
+            query.setParameter("nom", "%" + nom.toLowerCase() + "%");
+        }
+        if (type != null && !type.isBlank()) {
+            query.setParameter("type", "%" + type.toLowerCase() + "%");
+        }
+        return query.getResultList();
+    }
+
+    @Override
     public void update(ServiceMedical service) {
         try {
             if (service.getNumSM() == null) {

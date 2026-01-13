@@ -34,16 +34,7 @@
                 <h1>Votre sourire, notre priorité</h1>
                 
                 <div class="button-stack">
-                    <a href="<%= request.getContextPath() %>/rendezvous" class="btn-luxury">
-                        Prendre rendez-vous
-                    </a>
-                    
-                    
-                    <a href="<%= request.getContextPath() %>/service" class="btn-luxury">
-                        Découvrir les services
-                    </a>
-                    
-                    
+       
                     <a href="<%= request.getContextPath() %>/connexion" class="btn-luxury">
                         Espace Personnel
                     </a>

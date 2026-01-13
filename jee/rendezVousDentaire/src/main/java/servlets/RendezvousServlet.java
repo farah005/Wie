@@ -149,8 +149,27 @@ public class RendezvousServlet extends HttpServlet {
         try {
             Integer id = Integer.parseInt(request.getParameter("id"));
             String nouveauStatut = request.getParameter("statut");
-            
-            // Utilisation de la méthode optimisée de l'EJB
+            HttpSession session = request.getSession();
+            String userType = (String) session.getAttribute("userType");
+
+            // Contrôle d'autorisation : seuls les membres du personnel
+            // (aide-soignant ou dentiste) peuvent changer le statut
+            if (nouveauStatut != null) {
+                String s = nouveauStatut.trim();
+                boolean isPrivilegedChange = s.equalsIgnoreCase("Confirmé")
+                        || s.equalsIgnoreCase("Terminé")
+                        || s.equalsIgnoreCase("Annulé");
+                if (isPrivilegedChange) {
+                    if (userType == null || !("aide-soignant".equalsIgnoreCase(userType)
+                            || "dentiste".equalsIgnoreCase(userType))) {
+                        request.setAttribute("erreur", "Accès refusé : statut réservé au personnel.");
+                        listRendezvous(request, response);
+                        return;
+                    }
+                }
+            }
+
+            // Enregistrer exactement le statut fourni (pas de conversion automatique)
             RendezvousService.updateStatut(id, nouveauStatut);
             request.setAttribute("message", "Le rendez-vous est désormais : " + nouveauStatut);
         } catch (Exception e) {

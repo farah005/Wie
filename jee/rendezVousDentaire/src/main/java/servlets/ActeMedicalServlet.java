@@ -1,4 +1,4 @@
-package servlets;
+   package servlets;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -32,12 +32,20 @@ public class ActeMedicalServlet extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getParameter("action");
         
+        // fournir la liste des services pour le formulaire
+        try {
+            request.setAttribute("services", serviceMedicalService.findAll());
+        } catch (Exception ignored) {}
+
         if ("list".equals(action)) {
             listActes(request, response);
         } else if ("view".equals(action)) {
             viewActe(request, response);
         } else if ("byRendezvous".equals(action)) {
             listByRendezvous(request, response);
+        } else if ("new".equals(action)) {
+            // Préparer le formulaire pour un nouvel acte (éventuellement pré-rempli par idRv)
+            request.getRequestDispatcher("/WEB-INF/jsp/ActeMedical.jsp").forward(request, response);
         } else {
             // Afficher le formulaire d'acte médical
             request.getRequestDispatcher("/WEB-INF/jsp/ActeMedical.jsp").forward(request, response);
@@ -84,7 +92,17 @@ public class ActeMedicalServlet extends HttpServlet {
         ServiceMedical sm = serviceMedicalService.find(numSM);
         if (rdv == null || sm == null) {
             request.setAttribute("erreur", "Rendez-vous ou service médical introuvable.");
+            request.setAttribute("services", serviceMedicalService.findAll());
             request.getRequestDispatcher("/WEB-INF/jsp/ActeMedical.jsp").forward(request, response);
+            return;
+        }
+
+        // Autoriser la création d'un acte uniquement si le rendez-vous est terminé
+        String statut = rdv.getStatutRv();
+        if (statut == null || !"Terminé".equalsIgnoreCase(statut.trim())) {
+            request.setAttribute("erreur", "Impossible d'enregistrer un acte : le rendez-vous n'est pas terminé.");
+            request.setAttribute("services", serviceMedicalService.findAll());
+            request.getRequestDispatcher("/WEB-INF/jsp/DetailRendezvous.jsp").forward(request, response);
             return;
         }
 

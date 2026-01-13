@@ -13,6 +13,8 @@ import interfaces.AideSoignantLocal;
 import interfaces.PatientLocal;
 import entities.AideSoignant;
 import entities.Patient;
+import interfaces.DentisteLocal;
+import entities.Dentiste;
 
 @WebServlet("/connexion")
 public class ConnexionServlet extends HttpServlet {
@@ -22,6 +24,8 @@ public class ConnexionServlet extends HttpServlet {
     private PatientLocal patientService;
     @EJB
     private AideSoignantLocal AideSoignantService;
+    @EJB
+    private DentisteLocal DentisteService;
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -67,6 +71,12 @@ public class ConnexionServlet extends HttpServlet {
                 if (as != null && as.getMdpAS().equals(password)) {
                     idConnecte = as.getIdAS(); 
                     nomAffiche = as.getPrenomAS() + " " + as.getNomAS();
+                }
+            } else if ("dentiste".equals(userType)) {
+                Dentiste d = DentisteService.authenticate(email, password);
+                if (d != null) {
+                    idConnecte = d.getIdD();
+                    nomAffiche = d.getPrenomD() + " " + d.getNomD();
                 }
             }
 

@@ -6,9 +6,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import java.io.File;
-import java.io.IOException;
+import java.io.IOException; 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +17,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 @WebServlet("/publication")
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 2, // 2MB
@@ -38,6 +38,28 @@ public class PublicationServlet extends HttpServlet {
             // request.setAttribute("publications", publications);
             //request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
         } else {
+            // Si demande de view (après POST redirect), récupérer depuis la session
+            if ("view".equals(action)) {
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    Object titre = session.getAttribute("dernierTitre");
+                    Object desc = session.getAttribute("derniereDesc");
+                    Object type = session.getAttribute("dernierType");
+                    Object fichier = session.getAttribute("dernierFichier");
+                    if (titre != null) request.setAttribute("dernierTitre", titre);
+                    if (desc != null) request.setAttribute("derniereDesc", desc);
+                    if (type != null) request.setAttribute("dernierType", type);
+                    if (fichier != null) request.setAttribute("dernierFichier", fichier);
+                    // Nettoyer les attributs de session pour ne pas les réafficher
+                    session.removeAttribute("dernierTitre");
+                    session.removeAttribute("derniereDesc");
+                    session.removeAttribute("dernierType");
+                    session.removeAttribute("dernierFichier");
+                }
+                request.getRequestDispatcher("/WEB-INF/jsp/PublicationDetail.jsp").forward(request, response);
+                return;
+            }
+
             // Afficher le formulaire de publication
             request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
         }
@@ -56,52 +78,48 @@ public class PublicationServlet extends HttpServlet {
     
     private void uploadPublication(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        try {
-            // Récupérer le fichier uploadé
-            Part filePart = request.getPart("file");
-            String titre = request.getParameter("titre");
-            String description = request.getParameter("description");
-            
-            if (filePart == null || titre == null) {
-                request.setAttribute("erreur", "Veuillez sélectionner un fichier et fournir un titre");
-                request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
-                return;
-            }
-            
-            String fileName = sanitizeFileName(getFileName(filePart));
-
-            // Créer le répertoire d'upload s'il n'existe pas
-            String uploadPath = getServletContext().getRealPath("") + File.separator + UPLOAD_DIRECTORY;
-            Path uploadDir = Paths.get(uploadPath);
-            if (Files.notExists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-            }
-
-            // Sauvegarder le fichier de façon fiable
-            Path filePath = uploadDir.resolve(fileName);
-            try (InputStream input = filePart.getInputStream()) {
-                Files.copy(input, filePath, StandardCopyOption.REPLACE_EXISTING);
-            }
-            
-            // Créer l'entité Publication
-            // Publication publication = new Publication();
-            // publication.setTitre(titre);
-            // publication.setDescription(description);
-            // publication.setCheminFichier(UPLOAD_DIRECTORY + "/" + fileName);
-            // publication.setDatePublication(new Date());
-            
-            // Appel au service EJB
-            // publicationService.create(publication);
-            
-            request.setAttribute("message", "Publication uploadée avec succès : " + fileName);
+    try {
+        // 1. Récupération des données (noms synchronisés avec la JSP)
+        Part filePart = request.getPart("file"); // Correspond à name="file"
+        String titre = request.getParameter("titre");
+        String description = request.getParameter("description");
+        String typeP = request.getParameter("typeP");
+        
+        if (filePart == null || filePart.getSize() == 0 || titre == null || titre.isEmpty()) {
+            request.setAttribute("erreur", "Veuillez remplir le titre et choisir un fichier.");
             request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
-            
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Erreur lors de l'upload", e);
-            request.setAttribute("erreur", "Erreur lors de l'upload : " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
+            return;
         }
+
+        // 2. Traitement du fichier
+        String fileName = sanitizeFileName(getFileName(filePart));
+        String uploadPath = getServletContext().getRealPath("") + File.separator + UPLOAD_DIRECTORY;
+        Path uploadDir = Paths.get(uploadPath);
+        if (Files.notExists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        Path filePath = uploadDir.resolve(fileName);
+        try (InputStream input = filePart.getInputStream()) {
+            Files.copy(input, filePath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // 3. Stocker les infos en session puis rediriger (Post-Redirect-Get)
+        HttpSession session = request.getSession();
+        session.setAttribute("dernierTitre", titre);
+        session.setAttribute("derniereDesc", description);
+        session.setAttribute("dernierType", typeP);
+        session.setAttribute("dernierFichier", fileName);
+
+        // 4. Redirect vers la page de détail pour afficher la publication publiée
+        response.sendRedirect(request.getContextPath() + "/publication?action=view");
+
+    } catch (Exception e) {
+        LOGGER.log(Level.SEVERE, "Erreur upload", e);
+        request.setAttribute("erreur", "Erreur : " + e.getMessage());
+        request.getRequestDispatcher("/WEB-INF/jsp/Publication.jsp").forward(request, response);
     }
+}
     
     private void deletePublication(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
